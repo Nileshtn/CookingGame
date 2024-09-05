@@ -4,21 +4,24 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
-    [SerializeField] float playerSpeed = 1.0f;
-    [SerializeField] GameInput gameInput;
+    [SerializeField] private float moveSpeed = 10f;
+    [SerializeField] private GameInput gameInput;
+    [SerializeField] LayerMask counterLayermask;
 
+    //private bool isPlayerCollition;
     private bool isWalking;
+    private Vector3 lastMovementTracker;
+    private ClearCounter selectedCounter;
+
+    private void Start()
+    {
+        gameInput.OnIntractAction += GameInput_OnIntractAction;
+    }
+
     private void Update()
     {
-        
-        Vector2 inputVector = gameInput.GetMovementVectorNormalized();
-        Vector3 movDirection = new Vector3(inputVector.x,0.0f,inputVector.y);
-        transform.position += movDirection * playerSpeed * Time.deltaTime;
-
-        isWalking = movDirection != Vector3.zero;
-
-        float rotateSpeed = 10f;
-        transform.forward = Vector3.Slerp(transform.forward, movDirection, Time.deltaTime * rotateSpeed);
+        MovementHandeller();
+        InteractionHandeller();
     }
 
     public bool IsWalking()
@@ -26,5 +29,86 @@ public class Player : MonoBehaviour
         return isWalking;
     }
 
+    private void GameInput_OnIntractAction(object sender, System.EventArgs e)
+    {
+        selectedCounter?.Interact();
+    }
 
+    private void InteractionHandeller()
+    {
+        Vector2 inputVector = gameInput.GetMovementVectorNormalized();
+        Vector3 moveDirection = new Vector3(inputVector.x, 0, inputVector.y);
+        if(moveDirection != Vector3.zero )
+        {
+            lastMovementTracker = moveDirection;
+        }
+        float intrationRadius = 1.5f;
+        if(Physics.Raycast(transform.position, lastMovementTracker, out RaycastHit hitInfo, intrationRadius, counterLayermask))
+        {
+            if(hitInfo.transform.TryGetComponent(out ClearCounter clearCounter) )
+            {
+                if (clearCounter != selectedCounter)
+                {
+                    selectedCounter = clearCounter;
+                }
+            }
+            else
+            {
+                selectedCounter = null;
+            }
+        }
+        else
+        {
+            selectedCounter = null;
+        }
+
+        //Debug.Log(selectedCounter);
+    }
+    private void MovementHandeller()
+    {
+        Vector2 inputVector = gameInput.GetMovementVectorNormalized();
+        Vector3 movDirection = new Vector3(inputVector.x, 0.0f, inputVector.y);
+        bool canMove;
+        float playerRadius = 0.6f;
+        float playerHeight = 1.7f;
+        float playerSpeed = moveSpeed * Time.deltaTime;
+
+        canMove = !Physics.CapsuleCast(transform.position, transform.position + Vector3.up * playerHeight, playerRadius, movDirection, playerSpeed);
+
+        if (!canMove)
+        {
+            Vector3 movDirX = new Vector3(movDirection.x, 0, 0).normalized;
+            canMove = !Physics.CapsuleCast(transform.position, transform.position + Vector3.up * playerHeight, playerRadius, movDirX, playerSpeed);
+
+            if (canMove)
+            {
+                movDirection = movDirX;
+            }
+            else
+            {
+                Vector3 movDirZ = new Vector3(0, 0, movDirection.z).normalized;
+                canMove = !Physics.CapsuleCast(transform.position, transform.position + Vector3.up * playerHeight, playerRadius, movDirZ, playerSpeed);
+
+                if (canMove)
+                {
+                    movDirection = movDirZ;
+                }
+                else
+                {
+                    //can not move any where
+                }
+
+            }
+        }
+
+        if (canMove)
+        {
+            transform.position += movDirection * playerSpeed;
+        }
+
+        isWalking = movDirection != Vector3.zero;
+
+        float rotateSpeed = 10f;
+        transform.forward = Vector3.Slerp(transform.forward, movDirection, Time.deltaTime * rotateSpeed);
+    }
 }
