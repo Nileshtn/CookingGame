@@ -1,9 +1,18 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class Player : MonoBehaviour
 {
+    public static Player Instance { get; private set; }
+
+    public event EventHandler<OnSelectedCounterChangedEventArg> OnSelectedCounterChange;
+    public class OnSelectedCounterChangedEventArg : EventArgs
+    {
+        public ClearCounter selectedCounter;
+    }
+
     [SerializeField] private float moveSpeed = 10f;
     [SerializeField] private GameInput gameInput;
     [SerializeField] LayerMask counterLayermask;
@@ -12,6 +21,15 @@ public class Player : MonoBehaviour
     private bool isWalking;
     private Vector3 lastMovementTracker;
     private ClearCounter selectedCounter;
+
+    private void Awake()
+    {
+        if (Instance != null)
+        {
+            Debug.LogError("there is more than one player");
+        }
+        Instance = this;
+    }
 
     private void Start()
     {
@@ -49,20 +67,31 @@ public class Player : MonoBehaviour
             {
                 if (clearCounter != selectedCounter)
                 {
-                    selectedCounter = clearCounter;
+                    setSelectedCounter(clearCounter);
                 }
             }
             else
             {
-                selectedCounter = null;
+                setSelectedCounter(null);
             }
         }
         else
-        {
-            selectedCounter = null;
+        { 
+            setSelectedCounter(null);
+
         }
 
         //Debug.Log(selectedCounter);
+    }
+
+    private void setSelectedCounter(ClearCounter selectedCounter)
+    {
+        this.selectedCounter = selectedCounter;
+        OnSelectedCounterChange?.Invoke(this, new OnSelectedCounterChangedEventArg
+        {
+            selectedCounter = selectedCounter
+        });
+
     }
     private void MovementHandeller()
     {
