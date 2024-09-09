@@ -3,7 +3,9 @@ guid: 0f4922fbdf0618844bf35a4adc7dbb1b
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - kitchenObjectsSO: {fileID: 11400000, guid: f5164189fe8efc64c94f9427c7ec0e47, type: 2}
+  - spawnPoint: {instanceID: 0}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 
